@@ -16,6 +16,7 @@
   "author": "",
   "license": "Apache-2.0",
   "dependencies": {
+    "@xhmikosr/bin-wrapper": "^13.0.5",
     "conf": "^10.2.0",
     "node-fetch": "^3.3.2"
   }
