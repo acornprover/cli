@@ -1,0 +1,17 @@
+{
+  "name": "@acornprover/cli",
+  "version": "0.0.1",
+  "description": "CLI tool for Acorn",
+  "bin": {
+    "acorn": "./acorn.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "cli",
+    "acorn"
+  ],
+  "author": "",
+  "license": "Apache-2.0"
+}
