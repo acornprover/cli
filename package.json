@@ -13,5 +13,8 @@
     "acorn"
   ],
   "author": "",
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "dependencies": {
+    "conf": "^10.2.0"
+  }
 }
