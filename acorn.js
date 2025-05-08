@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
-const Conf = require("conf");
+import Conf from 'conf';
+import fetch from 'node-fetch';
 
 // Initialize the config store with the project name
 const config = new Conf({
@@ -8,6 +9,7 @@ const config = new Conf({
 });
 
 async function main() {
+
   // Parse command line arguments
   const args = process.argv.slice(2);
   const updateFlagIndex = args.indexOf("--update");
