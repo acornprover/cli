@@ -59,9 +59,11 @@ async function main() {
 
   // Check if an update is needed
   const lastUpdateTime = config.get("lastUpdateTime");
+  const installedVersion = config.get("installedVersion");
   const needsUpdate =
     updateFlag ||
     !lastUpdateTime ||
+    !installedVersion ||
     new Date().getTime() - new Date(lastUpdateTime).getTime() >
       24 * 60 * 60 * 1000; // More than a day old
 
@@ -86,19 +88,35 @@ async function main() {
     const version = release.tag_name.replace("v", "");
     console.log(`Latest release: ${release.tag_name}`);
 
-    // Find the correct binary for this platform
-    const binary = findBinary(release.assets, version);
+    // Check if we already have this version installed
+    if (installedVersion === version && !updateFlag) {
+      console.log(`Version ${version} is up to date.`);
+      // Use existing binary
+      bin = new BinWrapper()
+        .dest(join(__dirname, "vendor"))
+        .use(platform() === "win32" ? "acorn.exe" : "acorn");
+    } else {
+      // Need to download new version
+      // Find the correct binary for this platform
+      const binary = findBinary(release.assets, version);
 
-    // Setup binary wrapper
-    bin = new BinWrapper()
-      .src(binary.browser_download_url)
-      .dest(join(__dirname, "vendor"))
-      .use(platform() === "win32" ? "acorn.exe" : "acorn");
+      console.log(`Downloading ${binary.name}...`);
 
-    // Store the current time as the update time
-    config.set("lastUpdateTime", new Date().toISOString());
+      // Setup binary wrapper
+      bin = new BinWrapper()
+        .src(binary.browser_download_url)
+        .dest(join(__dirname, "vendor"))
+        .use(platform() === "win32" ? "acorn.exe" : "acorn");
+
+      // Save the version we're installing
+      config.set("installedVersion", version);
+
+      // Store the current time as the update time
+      config.set("lastUpdateTime", new Date().toISOString());
+    }
   } else {
     // Use existing binary
+    console.log(`Using installed version ${installedVersion}`);
     bin = new BinWrapper()
       .dest(join(__dirname, "vendor"))
       .use(platform() === "win32" ? "acorn.exe" : "acorn");
