@@ -13,9 +13,6 @@ const config = new Conf({
   projectName: "acorn",
 });
 
-// Find the right binary for the current platform, given the
-function findBinary(tag) {}
-
 async function main() {
   // Parse command line arguments
   const args = process.argv.slice(2);
