@@ -18,6 +18,7 @@
   "dependencies": {
     "@xhmikosr/bin-wrapper": "^13.0.5",
     "conf": "^10.2.0",
+    "env-paths": "^3.0.0",
     "node-fetch": "^3.3.2"
   }
 }

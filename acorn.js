@@ -5,12 +5,14 @@ import fetch from "node-fetch";
 import BinWrapper from "@xhmikosr/bin-wrapper";
 import { platform, arch } from "os";
 import { join } from "path";
-import { fileURLToPath } from "url";
-import { dirname } from "path";
+import envPaths from "env-paths";
+import { mkdir } from "fs/promises";
 
-// Get the current script directory
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+// Set up paths for the application
+const paths = envPaths("acorn", { suffix: "" });
+
+// Create the binary directory path once
+const binDir = join(paths.cache, "bin");
 
 // Initialize the config store with the project name
 const config = new Conf({
@@ -43,10 +45,14 @@ const findBinary = (assets, version) => {
     );
   }
 
-  return matchingAssets[0];
+  let answer = matchingAssets[0];
+  return answer;
 };
 
 async function main() {
+  // Ensure the binary directory exists
+  await mkdir(binDir, { recursive: true });
+
   // Parse command line arguments
   const args = process.argv.slice(2);
   const updateFlagIndex = args.indexOf("--update");
@@ -93,7 +99,7 @@ async function main() {
       console.log(`Version ${version} is up to date.`);
       // Use existing binary
       bin = new BinWrapper()
-        .dest(join(__dirname, "vendor"))
+        .dest(binDir)
         .use(platform() === "win32" ? "acorn.exe" : "acorn");
     } else {
       // Need to download new version
@@ -105,7 +111,7 @@ async function main() {
       // Setup binary wrapper
       bin = new BinWrapper()
         .src(binary.browser_download_url)
-        .dest(join(__dirname, "vendor"))
+        .dest(binDir)
         .use(platform() === "win32" ? "acorn.exe" : "acorn");
 
       // Save the version we're installing
@@ -117,7 +123,7 @@ async function main() {
   } else {
     // Use existing binary
     bin = new BinWrapper()
-      .dest(join(__dirname, "vendor"))
+      .dest(binDir)
       .use(platform() === "win32" ? "acorn.exe" : "acorn");
   }
 
