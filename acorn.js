@@ -86,10 +86,10 @@ async function main() {
 
     const release = await response.json();
     const version = release.tag_name.replace("v", "");
-    console.log(`Latest release: ${release.tag_name}`);
+    // console.log(`Latest release: ${release.tag_name}`);
 
     // Check if we already have this version installed
-    if (installedVersion === version && !updateFlag) {
+    if (installedVersion === version) {
       console.log(`Version ${version} is up to date.`);
       // Use existing binary
       bin = new BinWrapper()
@@ -116,7 +116,6 @@ async function main() {
     }
   } else {
     // Use existing binary
-    console.log(`Using installed version ${installedVersion}`);
     bin = new BinWrapper()
       .dest(join(__dirname, "vendor"))
       .use(platform() === "win32" ? "acorn.exe" : "acorn");
@@ -128,12 +127,7 @@ async function main() {
   }
 
   // Execute the binary with any remaining arguments
-  try {
-    await bin.run(args);
-  } catch (error) {
-    console.error(`Error running acorn: ${error.message}`);
-    process.exit(1);
-  }
+  await bin.run(args);
 }
 
 // Run the main function
