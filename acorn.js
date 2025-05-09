@@ -6,22 +6,62 @@ import BinWrapper from "@xhmikosr/bin-wrapper";
 import { platform, arch } from "os";
 import { join } from "path";
 import envPaths from "env-paths";
-import { mkdir } from "fs/promises";
+import { mkdir, readdir, unlink, rmdir } from "fs/promises";
+import { existsSync } from "fs";
 
 // Initialize the config store with the project name
 const config = new Conf({
   projectName: "acorn",
 });
 
+/**
+ * Deletes all files in the cache directory
+ * @returns {Promise<void>}
+ */
+async function clearCache() {
+  const cachePath = envPaths("acorn").cache;
+
+  if (!existsSync(cachePath)) {
+    return;
+  }
+
+  try {
+    const files = await readdir(cachePath);
+
+    // Delete all files in the cache directory
+    await Promise.all(
+      files.map(file => unlink(join(cachePath, file)))
+    );
+
+    console.log(`Cache cleared successfully.`);
+  } catch (error) {
+    console.error(`Failed to clear cache: ${error.message}`);
+  }
+}
+
 async function main() {
   // Parse command line arguments
   const args = process.argv.slice(2);
   const updateFlagIndex = args.indexOf("--update");
   const updateFlag = updateFlagIndex !== -1;
+  const cleanFlagIndex = args.indexOf("--clean");
+  const cleanFlag = cleanFlagIndex !== -1;
 
-  // Remove update flag from args if present
+  // Remove flags from args if present
   if (updateFlagIndex !== -1) {
     args.splice(updateFlagIndex, 1);
+  }
+
+  if (cleanFlagIndex !== -1) {
+    args.splice(cleanFlagIndex, 1);
+  }
+
+  // Handle clean request
+  if (cleanFlag) {
+    await clearCache();
+    if (args.length === 0) {
+      return;
+    }
   }
 
   // Check if an update is needed
