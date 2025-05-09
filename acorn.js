@@ -29,7 +29,7 @@ async function main() {
 
   // Check if an update is needed
   const lastUpdateTime = config.get("lastUpdateTime");
-  const tag = config.get("tag");
+  let tag = config.get("tag");
   const needsUpdate =
     updateFlag ||
     !lastUpdateTime ||
@@ -66,14 +66,27 @@ async function main() {
   }
 
   const version = tag.replace("v", "");
-  const base = `https://github.com/acornprover/acorn/releases/download/${tag}/`;
+  const urlPath = `https://github.com/acornprover/acorn/releases/download/${tag}/`;
+
+  let suffix = null;
+  if (process.platform === "darwin" && process.arch === "arm64") {
+    suffix = "darwin-arm64";
+  } else if (process.platform === "linux" && process.arch === "x64") {
+    suffix = "linux-x64";
+  } else if (process.platform === "win32" && process.arch === "x64") {
+    suffix = "win32-x64.exe";
+  } else {
+    throw new Error(
+      `Unsupported platform: ${process.platform}-${process.arch}`
+    );
+  }
+  const basename = `acorn-${version}-${suffix}`;
+  const url = `${urlPath}${basename}`;
 
   const bin = new BinWrapper()
-    .src(`${base}acorn-${version}-darwin-arm64`, "darwin", "arm64")
-    .src(`${base}acorn-${version}-linux-x64`, "linux", "x64")
-    .src(`${base}acorn-${version}-win32-x64.exe`, "win32", "x64")
+    .src(url, process.platform, process.arch)
     .dest(envPaths("acorn").cache) // e.g. ~/Library/Caches/acorn
-    .use(process.platform === "win32" ? "acorn.exe" : "acorn");
+    .use(basename);
 
   if (updateFlag) {
     // Check the version to make sure it works
