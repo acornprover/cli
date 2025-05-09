@@ -8,51 +8,15 @@ import { join } from "path";
 import envPaths from "env-paths";
 import { mkdir } from "fs/promises";
 
-// Set up paths for the application
-const paths = envPaths("acorn", { suffix: "" });
-
-// Create the binary directory path once
-const binDir = join(paths.cache, "bin");
-
 // Initialize the config store with the project name
 const config = new Conf({
   projectName: "acorn",
 });
 
-// Find the right binary for the current platform
-const findBinary = (assets, version) => {
-  const osType = platform();
-  const architecture = arch();
-
-  // Create a pattern to match platform+arch in filename
-  const pattern = `acorn-${version}-${osType}-${architecture}`;
-  const exePattern = osType === "win32" ? `${pattern}.exe` : pattern;
-
-  // Filter assets that match our pattern
-  const matchingAssets = assets.filter(
-    (asset) => asset.name === pattern || asset.name === exePattern
-  );
-
-  if (matchingAssets.length === 0) {
-    throw new Error(`No matching binary found for ${osType}-${architecture}`);
-  }
-
-  if (matchingAssets.length > 1) {
-    throw new Error(
-      `Multiple matching binaries found: ${matchingAssets
-        .map((a) => a.name)
-        .join(", ")}`
-    );
-  }
-
-  let answer = matchingAssets[0];
-  return answer;
-};
+// Find the right binary for the current platform, given the
+function findBinary(tag) {}
 
 async function main() {
-  // Ensure the binary directory exists
-  await mkdir(binDir, { recursive: true });
-
   // Parse command line arguments
   const args = process.argv.slice(2);
   const updateFlagIndex = args.indexOf("--update");
@@ -65,20 +29,16 @@ async function main() {
 
   // Check if an update is needed
   const lastUpdateTime = config.get("lastUpdateTime");
-  const installedVersion = config.get("installedVersion");
+  const tag = config.get("tag");
   const needsUpdate =
     updateFlag ||
     !lastUpdateTime ||
-    !installedVersion ||
+    !tag ||
     new Date().getTime() - new Date(lastUpdateTime).getTime() >
       24 * 60 * 60 * 1000; // More than a day old
 
-  let bin = null;
-
-  // Handle updates
   if (needsUpdate) {
-    console.log("Checking for updates...");
-
+    // Check if there is a new tag.
     const response = await fetch(
       "https://api.github.com/repos/acornprover/acorn/releases/latest",
       {
@@ -91,49 +51,37 @@ async function main() {
     }
 
     const release = await response.json();
-    const version = release.tag_name.replace("v", "");
-    // console.log(`Latest release: ${release.tag_name}`);
-
-    // Check if we already have this version installed
-    if (installedVersion === version) {
-      console.log(`Version ${version} is up to date.`);
-      // Use existing binary
-      bin = new BinWrapper()
-        .dest(binDir)
-        .use(platform() === "win32" ? "acorn.exe" : "acorn");
+    if (release.tag_name === tag) {
+      console.log(`${tag} is up to date.`);
     } else {
-      // Need to download new version
-      // Find the correct binary for this platform
-      const binary = findBinary(release.assets, version);
-
-      console.log(`Downloading ${binary.name}...`);
-
-      // Setup binary wrapper
-      bin = new BinWrapper()
-        .src(binary.browser_download_url)
-        .dest(binDir)
-        .use(platform() === "win32" ? "acorn.exe" : "acorn");
-
-      // Save the version we're installing
-      config.set("installedVersion", version);
-
-      // Store the current time as the update time
-      config.set("lastUpdateTime", new Date().toISOString());
+      console.log(`Updating to ${release.tag_name} release...`);
     }
+
+    // Save the version we're using
+    tag = release.tag_name;
+    config.set("tag", tag);
+
+    // Store the current time as the update time
+    config.set("lastUpdateTime", new Date().toISOString());
+  }
+
+  const version = tag.replace("v", "");
+  const base = `https://github.com/acornprover/acorn/releases/download/${tag}/`;
+
+  const bin = new BinWrapper()
+    .src(`${base}acorn-${version}-darwin-arm64`, "darwin", "arm64")
+    .src(`${base}acorn-${version}-linux-x64`, "linux", "x64")
+    .src(`${base}acorn-${version}-win32-x64.exe`, "win32", "x64")
+    .dest(envPaths("acorn").cache) // e.g. ~/Library/Caches/acorn
+    .use(process.platform === "win32" ? "acorn.exe" : "acorn");
+
+  if (updateFlag) {
+    // Check the version to make sure it works
+    await bin.run(["--version"]);
   } else {
-    // Use existing binary
-    bin = new BinWrapper()
-      .dest(binDir)
-      .use(platform() === "win32" ? "acorn.exe" : "acorn");
+    // Execute the binary with any remaining arguments
+    await bin.run(args);
   }
-
-  // Only exit early if the update flag was explicitly passed
-  if (updateFlag && args.length === 0) {
-    process.exit(0);
-  }
-
-  // Execute the binary with any remaining arguments
-  await bin.run(args);
 }
 
 // Run the main function
