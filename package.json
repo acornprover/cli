@@ -3,7 +3,7 @@
   "version": "0.0.2",
   "description": "CLI tool for Acorn",
   "bin": {
-    "acorn": "./acorn.js"
+    "acorn": "acorn.js"
   },
   "type": "module",
   "scripts": {
