@@ -3,10 +3,11 @@
 import Conf from "conf";
 import fetch from "node-fetch";
 import BinWrapper from "@xhmikosr/bin-wrapper";
-import { platform, arch } from "os";
+import { execa } from "execa";
+
 import { join } from "path";
 import envPaths from "env-paths";
-import { mkdir, readdir, unlink, rmdir } from "fs/promises";
+import { readdir, unlink } from "fs/promises";
 import { existsSync } from "fs";
 
 // Initialize the config store with the project name
@@ -29,9 +30,7 @@ async function clearCache() {
     const files = await readdir(cachePath);
 
     // Delete all files in the cache directory
-    await Promise.all(
-      files.map(file => unlink(join(cachePath, file)))
-    );
+    await Promise.all(files.map((file) => unlink(join(cachePath, file))));
 
     console.log(`Cache cleared successfully.`);
   } catch (error) {
@@ -41,7 +40,7 @@ async function clearCache() {
 
 async function main() {
   // Parse command line arguments
-  const args = process.argv.slice(2);
+  let args = process.argv.slice(2);
   const updateFlagIndex = args.indexOf("--update");
   const updateFlag = updateFlagIndex !== -1;
   const cleanFlagIndex = args.indexOf("--clean");
@@ -125,13 +124,12 @@ async function main() {
     .dest(envPaths("acorn").cache) // e.g. ~/Library/Caches/acorn
     .use(basename);
 
+  await bin.download();
   if (updateFlag) {
-    // Check the version to make sure it works
-    await bin.run(["--version"]);
-  } else {
-    // Execute the binary with any remaining arguments
-    await bin.run(args);
+    // Just check the version to make sure it works
+    args = ["--version"];
   }
+  await execa(bin.path(), args, { stdio: "inherit" });
 }
 
 // Run the main function
