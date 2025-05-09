@@ -13,8 +13,11 @@
     "cli",
     "acorn"
   ],
-  "author": "",
+  "author": "Kevin Lacker",
   "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "@xhmikosr/bin-wrapper": "^13.0.5",
     "conf": "^10.2.0",
