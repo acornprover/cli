@@ -38,6 +38,30 @@ async function clearCache() {
   }
 }
 
+/**
+ * Fetches the latest tag from GitHub API or returns ACORN_TAG env var if set
+ * @returns {Promise<string>} The latest tag name
+ */
+async function getTag() {
+  if (process.env.ACORN_TAG) {
+    return process.env.ACORN_TAG;
+  }
+
+  const response = await fetch(
+    "https://api.github.com/repos/acornprover/acorn/releases/latest",
+    {
+      headers: { "User-Agent": "acorn-cli" },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! Status: ${response.status}`);
+  }
+
+  const release = await response.json();
+  return release.tag_name;
+}
+
 async function main() {
   // Parse command line arguments
   let args = process.argv.slice(2);
@@ -74,27 +98,15 @@ async function main() {
       24 * 60 * 60 * 1000; // More than a day old
 
   if (needsUpdate) {
-    // Check if there is a new tag.
-    const response = await fetch(
-      "https://api.github.com/repos/acornprover/acorn/releases/latest",
-      {
-        headers: { "User-Agent": "acorn-cli" },
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
-    }
-
-    const release = await response.json();
-    if (release.tag_name === tag) {
+    const latestTag = await getTag();
+    if (latestTag === tag) {
       console.log(`${tag} is up to date.`);
     } else {
-      console.log(`Updating to ${release.tag_name} release...`);
+      console.log(`Updating to ${latestTag} release...`);
     }
 
     // Save the version we're using
-    tag = release.tag_name;
+    tag = latestTag;
     config.set("tag", tag);
 
     // Store the current time as the update time
