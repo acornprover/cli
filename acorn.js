@@ -141,7 +141,17 @@ async function main() {
     // Just check the version to make sure it works
     args = ["--version"];
   }
-  await execa(bin.path(), args, { stdio: "inherit" });
+  
+  try {
+    await execa(bin.path(), args, { stdio: "inherit" });
+  } catch (error) {
+    // If the subprocess exited with a non-zero code, propagate it without printing
+    if (error.exitCode !== undefined) {
+      process.exit(error.exitCode);
+    }
+    // Re-throw for other errors
+    throw error;
+  }
 }
 
 // Run the main function
