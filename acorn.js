@@ -136,7 +136,11 @@ async function main() {
     .dest(envPaths("acorn").cache) // e.g. ~/Library/Caches/acorn
     .use(basename);
 
-  await bin.download();
+  // The cache key includes the release tag, so if this exact binary is
+  // already present locally there is no need to redownload it.
+  if (!existsSync(bin.path())) {
+    await bin.download();
+  }
   if (updateFlag) {
     // Just check the version to make sure it works
     args = ["--version"];
